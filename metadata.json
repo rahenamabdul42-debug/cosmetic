@@ -1,0 +1,6 @@
+{
+  "name": "Maison Roseraie — Luxury Pink & Gold Cosmetics",
+  "description": "International luxury cosmetics, skincare, haircare, and fine fragrance atelier featuring 54 artisanal beauty creations in Pakistan.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
