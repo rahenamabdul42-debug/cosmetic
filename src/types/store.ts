@@ -42,6 +42,7 @@ export interface Product {
   name: string;
   subtitle: string;
   category: ProductCategory;
+  dbCategory?: string;
   subcategory: string;
   description: string;
   ingredients: string;
@@ -138,4 +139,16 @@ export interface DatabaseStatus {
   mode: 'supabase' | 'local';
   connected: boolean;
   message: string;
+}
+
+export interface InquiryInput {
+  name: string;
+  phone: string;
+  subject: string;
+  message: string;
+}
+
+export interface NewsletterResult {
+  alreadySubscribed: boolean;
+  email: string;
 }

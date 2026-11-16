@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { ArrowRight, Star } from 'lucide-react';
 import { PageRoute, Product, ProductReview } from '../types/store';
-import { EDITORIAL_IMAGES } from '../data/productImages';
+import { EDITORIAL_IMAGES, PRODUCT_IMAGES } from '../data/productImages';
+import { subscribeNewsletter } from '../services/storeService';
 import { ProductCard } from '../components/ProductCard';
 import {
   BotanicalFlourish,
@@ -20,13 +21,48 @@ interface HomePageProps {
   onNavigate: (route: PageRoute, slug?: string) => void;
 }
 
-const CATEGORY_SHOWCASE: { title: string; route: PageRoute; count: string; imageIndex: number }[] = [
-  { title: 'Makeup Couture', route: 'makeup', count: '18 Creations', imageIndex: 0 },
-  { title: 'Skincare Rituals', route: 'skincare', count: '15 Creations', imageIndex: 20 },
-  { title: 'Fine Perfumes', route: 'perfumes', count: '3 Extraits & Mists', imageIndex: 40 },
-  { title: 'Haircare Elixirs', route: 'haircare', count: '7 Creations', imageIndex: 35 },
-  { title: 'Body Care', route: 'body-care', count: '3 Rituals', imageIndex: 44 },
-  { title: 'Gift Boxes & Tools', route: 'accessories', count: '8 Creations', imageIndex: 46 },
+const CATEGORY_SHOWCASE: {
+  title: string;
+  route: PageRoute;
+  matchCategories: string[];
+  fallbackImage: string;
+}[] = [
+  {
+    title: 'Makeup Couture',
+    route: 'makeup',
+    matchCategories: ['Makeup', 'Lipsticks', 'Foundations', 'Eyeshadow Palettes'],
+    fallbackImage: PRODUCT_IMAGES.velvetLipstick,
+  },
+  {
+    title: 'Skincare Rituals',
+    route: 'skincare',
+    matchCategories: ['Skincare', 'Face Serums', 'Moisturizers'],
+    fallbackImage: PRODUCT_IMAGES.goldSerum,
+  },
+  {
+    title: 'Fine Perfumes',
+    route: 'perfumes',
+    matchCategories: ['Perfumes'],
+    fallbackImage: PRODUCT_IMAGES.roseraiePerfume,
+  },
+  {
+    title: 'Haircare Elixirs',
+    route: 'haircare',
+    matchCategories: ['Haircare'],
+    fallbackImage: PRODUCT_IMAGES.hairElixir,
+  },
+  {
+    title: 'Body Care',
+    route: 'body-care',
+    matchCategories: ['Body Care'],
+    fallbackImage: PRODUCT_IMAGES.bodyLotion,
+  },
+  {
+    title: 'Gift Boxes & Tools',
+    route: 'accessories',
+    matchCategories: ['Beauty Accessories'],
+    fallbackImage: PRODUCT_IMAGES.giftBoxSovereign,
+  },
 ];
 
 export function HomePage({
@@ -39,19 +75,41 @@ export function HomePage({
   onNavigate,
 }: HomePageProps) {
   const [newsletterEmail, setNewsletterEmail] = useState('');
-  const [newsletterDone, setNewsletterDone] = useState(false);
+  const [newsletterLoading, setNewsletterLoading] = useState(false);
+  const [newsletterMsg, setNewsletterMsg] = useState('');
+  const [newsletterError, setNewsletterError] = useState('');
 
-  const bestSellers = products.filter((p) => p.isBestSeller && p.isActive).slice(0, 6);
-  const newArrivals = products.filter((p) => p.isNewArrival && p.isActive).slice(0, 6);
-  const featuredOffers = products
-    .filter((p) => p.discountPricePkr !== null && p.isActive)
+  const activeProducts = products.filter((p) => p.isActive);
+  const bestSellers = activeProducts.filter((p) => p.isBestSeller).slice(0, 6);
+  const displayedBestSellers = bestSellers.length > 0 ? bestSellers : activeProducts.slice(0, 6);
+  const newArrivals = activeProducts.filter((p) => p.isNewArrival).slice(0, 6);
+  const displayedNewArrivals =
+    newArrivals.length > 0 ? newArrivals : activeProducts.slice(0, 6);
+  const featuredOffers = activeProducts
+    .filter((p) => p.discountPricePkr !== null)
     .slice(0, 3);
+  const heroSpotlight = activeProducts[0];
 
-  const handleNewsletter = (e: React.FormEvent) => {
+  const handleNewsletter = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newsletterEmail.trim()) return;
-    setNewsletterDone(true);
-    setNewsletterEmail('');
+    if (!newsletterEmail.trim() || newsletterLoading) return;
+    setNewsletterLoading(true);
+    setNewsletterError('');
+    try {
+      const res = await subscribeNewsletter(newsletterEmail);
+      setNewsletterMsg(
+        res.alreadySubscribed
+          ? 'You are already part of the Vespera Beauty Inner Circle. Use code VESPERA10 at checkout.'
+          : 'Thank you for joining Vespera Beauty. Your welcome code VESPERA10 is ready.'
+      );
+      setNewsletterEmail('');
+    } catch (err) {
+      setNewsletterError(
+        err instanceof Error ? err.message : 'Unable to subscribe right now. Please try again.'
+      );
+    } finally {
+      setNewsletterLoading(false);
+    }
   };
 
   return (
@@ -78,7 +136,7 @@ export function HomePage({
               className="lg:col-span-5 flex flex-col justify-center space-y-6 relative z-10"
             >
               <div className="text-xs tracking-[0.18em] uppercase text-[#D4AF70] font-semibold">
-                Maison Roseraie · Paris &amp; Karachi
+                Vespera Beauty · Paris &amp; Karachi
               </div>
 
               <h1
@@ -117,7 +175,7 @@ export function HomePage({
 
               {/* Clean Unboxed Trust Line */}
               <div className="pt-4 border-t border-[#D4AF70]/30 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-[#F4C6D0]/80">
-                <span>54 Botanical Creations</span>
+                <span>{activeProducts.length} Curated Creations</span>
                 <span aria-hidden="true" className="text-[#D4AF70]">·</span>
                 <span>Cash on Delivery Nationwide</span>
                 <span aria-hidden="true" className="text-[#D4AF70]">·</span>
@@ -135,7 +193,7 @@ export function HomePage({
               <div className="relative h-full min-h-[340px] lg:min-h-[480px] rounded-2xl overflow-hidden border border-[#D4AF70]/55 shadow-[0_24px_70px_rgba(212,175,112,0.12)] bg-[#111111]">
                 <img
                   src={EDITORIAL_IMAGES.heroLuxuryCosmetics}
-                  alt="Maison Roseraie luxury crystal perfume, engraved gold lipstick, and rose serum on black marble"
+                  alt="Vespera Beauty luxury crystal perfume, engraved gold lipstick, and rose serum on black marble"
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover"
                 />
@@ -143,15 +201,19 @@ export function HomePage({
                 <div className="absolute bottom-5 left-5 right-5 bg-[#111111]/90 backdrop-blur-md border border-[#D4AF70]/55 rounded-xl px-5 py-3.5 flex items-center justify-between gap-4">
                   <div>
                     <p className="font-display text-lg font-semibold text-[#D4AF70]">
-                      The Sovereign Rose &amp; 24K Gold Trio
+                      The Vespera Obsidian &amp; 24K Gold Collection
                     </p>
                     <p className="text-xs text-[#F4C6D0]/85">
-                      Roseraie Impériale · Rosewood Kiss · 24K Radiance Serum
+                      Aura Rosa Parfum · Velvet Crimson Silk · Golden Glow Elixir
                     </p>
                   </div>
                   <button
                     type="button"
-                    onClick={() => onNavigate('product-details', 'eau-de-parfum-roseraie-imperiale')}
+                    onClick={() =>
+                      heroSpotlight
+                        ? onNavigate('product-details', heroSpotlight.slug)
+                        : onNavigate('shop')
+                    }
                     className="px-4 py-2 rounded-lg bg-[#E8A1B2] text-[#090909] text-xs font-semibold whitespace-nowrap shrink-0 hover:bg-[#F4C6D0] transition-colors"
                   >
                     Discover
@@ -179,14 +241,19 @@ export function HomePage({
             onClick={() => onNavigate('shop')}
             className="text-sm font-medium text-[#E8A1B2] hover:text-[#D4AF70] flex items-center gap-1.5 transition-colors"
           >
-            <span>View All 54 Creations</span>
+            <span>View All Creations</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {CATEGORY_SHOWCASE.map((cat) => {
-            const sample = products[cat.imageIndex] ?? products[0];
+            const matching = activeProducts.filter(
+              (p) =>
+                cat.matchCategories.includes(p.category) ||
+                (p.dbCategory ? cat.matchCategories.includes(p.dbCategory) : false)
+            );
+            const sample = matching[0];
             return (
               <button
                 key={cat.route}
@@ -196,7 +263,7 @@ export function HomePage({
               >
                 <div className="aspect-[4/3] overflow-hidden bg-[#111111]">
                   <img
-                    src={sample?.imageUrl}
+                    src={sample?.imageUrl || cat.fallbackImage}
                     alt={cat.title}
                     referrerPolicy="no-referrer"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -206,7 +273,9 @@ export function HomePage({
                   <div className="font-display text-lg font-semibold text-[#FFFFFF] group-hover:text-[#D4AF70] leading-tight transition-colors">
                     {cat.title}
                   </div>
-                  <div className="text-xs text-[#F4C6D0]/75 mt-0.5">{cat.count}</div>
+                  <div className="text-xs text-[#F4C6D0]/75 mt-0.5">
+                    {matching.length > 0 ? `${matching.length} Creations` : 'Explore House'}
+                  </div>
                 </div>
               </button>
             );
@@ -237,7 +306,7 @@ export function HomePage({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
-            {bestSellers.map((product) => (
+            {displayedBestSellers.map((product) => (
               <ProductCard
                 key={product.id}
                 product={product}
@@ -258,25 +327,25 @@ export function HomePage({
           <div className="lg:col-span-6 p-8 sm:p-12 flex flex-col justify-center space-y-5">
             <BotanicalFlourish className="w-28 h-10 -ml-2" />
             <div className="text-xs tracking-[0.16em] uppercase text-[#D4AF70] font-semibold">
-              Special Seasonal Offer · Up to 15% Privilege
+              Special Seasonal Offer · Up to 10% Privilege
             </div>
             <h2
               className="font-display text-3xl sm:text-4xl font-semibold text-[#FFFFFF] leading-tight"
               style={{ textWrap: 'balance' }}
             >
-              The Sovereign Velvet Coffrets &amp; Bridal Trunks
+              The Vespera Velvet Coffrets &amp; Bridal Trunks
             </h2>
             <p className="text-sm sm:text-base text-[#F4C6D0]/85 leading-relaxed">
               Curated obsidian velvet presentation boxes accented in blush silk—paired with complimentary gold-foil calligraphy and insured nationwide Cash on Delivery. Use code{' '}
-              <span className="font-semibold text-[#D4AF70]">ROSERAIE10</span> at checkout.
+              <span className="font-semibold text-[#D4AF70]">VESPERA10</span> at checkout.
             </p>
             <div className="flex flex-wrap gap-3 pt-2">
               <button
                 type="button"
-                onClick={() => onNavigate('accessories')}
+                onClick={() => onNavigate('shop')}
                 className="px-6 py-3 rounded-xl bg-[#D4AF70] text-[#090909] text-sm font-semibold border border-[#D4AF70] hover:bg-[#C69B52] transition-colors flex items-center gap-2"
               >
-                <span>Shop Gift Coffrets</span>
+                <span>Shop All Creations</span>
                 <ArrowRight className="w-4 h-4 text-[#090909]" />
               </button>
               <button
@@ -340,7 +409,7 @@ export function HomePage({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
-            {newArrivals.map((product) => (
+            {displayedNewArrivals.map((product) => (
               <ProductCard
                 key={product.id}
                 product={product}
@@ -415,34 +484,42 @@ export function HomePage({
             Private Atelier Privilege
           </p>
           <h2 className="font-display text-3xl sm:text-4xl font-semibold text-[#FFFFFF]">
-            Join the Maison Roseraie Inner Circle
+            Join the Vespera Beauty Inner Circle
           </h2>
           <p className="text-sm sm:text-base text-[#F4C6D0]/85 max-w-xl mx-auto">
-            Receive early invitations to limited bridal coffrets, formulation notes, and an instant 10% welcome privilege with code <span className="font-semibold text-[#D4AF70]">ROSERAIE10</span>.
+            Receive early invitations to limited bridal coffrets, formulation notes, and an instant 10% welcome privilege with code <span className="font-semibold text-[#D4AF70]">VESPERA10</span>.
           </p>
-          {newsletterDone ? (
+          {newsletterMsg ? (
             <div className="inline-block px-6 py-3 rounded-xl bg-[#1B1B1B] border border-[#D4AF70] text-sm font-medium text-[#F4C6D0]">
-              Thank you for joining Maison Roseraie. Your welcome code ROSERAIE10 is ready.
+              {newsletterMsg}
             </div>
           ) : (
             <form
               onSubmit={handleNewsletter}
-              className="flex flex-col sm:flex-row gap-3 max-w-lg mx-auto pt-2"
+              className="space-y-3 max-w-lg mx-auto pt-2"
             >
-              <input
-                type="email"
-                required
-                value={newsletterEmail}
-                onChange={(e) => setNewsletterEmail(e.target.value)}
-                placeholder="Your email address"
-                className="flex-1 px-4 py-3 rounded-xl bg-[#090909] border border-[#D4AF70]/55 text-sm text-[#FFFFFF] placeholder:text-[#F4C6D0]/50 focus:outline-none focus:border-[#E8A1B2]"
-              />
-              <button
-                type="submit"
-                className="px-7 py-3 rounded-xl bg-[#D4AF70] text-[#090909] text-sm font-semibold border border-[#D4AF70] hover:bg-[#C69B52] transition-colors whitespace-nowrap"
-              >
-                Subscribe
-              </button>
+              {newsletterError && (
+                <div className="p-3 rounded-xl bg-[#1B1B1B] border border-[#E8A1B2] text-xs text-[#F4C6D0]">
+                  {newsletterError}
+                </div>
+              )}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input
+                  type="email"
+                  required
+                  value={newsletterEmail}
+                  onChange={(e) => setNewsletterEmail(e.target.value)}
+                  placeholder="Your email address"
+                  className="flex-1 px-4 py-3 rounded-xl bg-[#090909] border border-[#D4AF70]/55 text-sm text-[#FFFFFF] placeholder:text-[#F4C6D0]/50 focus:outline-none focus:border-[#E8A1B2]"
+                />
+                <button
+                  type="submit"
+                  disabled={newsletterLoading}
+                  className="px-7 py-3 rounded-xl bg-[#D4AF70] text-[#090909] text-sm font-semibold border border-[#D4AF70] hover:bg-[#C69B52] transition-colors whitespace-nowrap disabled:opacity-60"
+                >
+                  {newsletterLoading ? 'Subscribing...' : 'Subscribe'}
+                </button>
+              </div>
             </form>
           )}
         </div>

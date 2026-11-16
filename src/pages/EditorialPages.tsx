@@ -3,6 +3,7 @@ import { ChevronDown, Mail, MapPin, Phone, Star } from 'lucide-react';
 import { EDITORIAL_IMAGES } from '../data/productImages';
 import { FAQ_ITEMS } from '../data/catalog';
 import { PageRoute, ProductReview } from '../types/store';
+import { submitInquiry } from '../services/storeService';
 import { GoldDivider } from '../components/LuxuryDecor';
 
 export function AboutPage({ onNavigate }: { onNavigate: (route: PageRoute) => void }) {
@@ -18,7 +19,7 @@ export function AboutPage({ onNavigate }: { onNavigate: (route: PageRoute) => vo
               Where French Botanical Craft Meets South Asian Radiance
             </h1>
             <p className="text-sm sm:text-base text-[#F4C6D0]/85 leading-relaxed">
-              Maison Roseraie was founded on a quiet conviction: luxury cosmetics should nourish the skin barrier as faithfully as they adorn it. Each formula pairs cold-pressed Damask rose otto, 24K cosmetic gold, and silk amino acids inside refillable obsidian glass and brushed champagne gold vessels.
+              Vespera Beauty was founded on a quiet conviction: luxury cosmetics should nourish the skin barrier as faithfully as they adorn it. Each formula pairs cold-pressed Damask rose otto, 24K cosmetic gold, and silk amino acids inside refillable obsidian glass and brushed champagne gold vessels.
             </p>
             <p className="text-sm sm:text-base text-[#F4C6D0]/85 leading-relaxed">
               From our Parisian scent collaborations in Grasse to our flagship beauty salons in Karachi, Lahore, and Islamabad, every creation is cruelty-free, paraben-free, and calibrated for warm, humid climates.
@@ -29,7 +30,7 @@ export function AboutPage({ onNavigate }: { onNavigate: (route: PageRoute) => vo
                 onClick={() => onNavigate('shop')}
                 className="px-7 py-3 rounded-xl bg-[#D4AF70] text-[#090909] text-sm font-semibold hover:bg-[#C69B52] transition-colors"
               >
-                Explore the 54 Creations
+                Explore All Creations
               </button>
             </div>
           </div>
@@ -37,7 +38,7 @@ export function AboutPage({ onNavigate }: { onNavigate: (route: PageRoute) => vo
           <div className="lg:col-span-6 rounded-3xl overflow-hidden border border-[#D4AF70]/50 shadow-2xl min-h-[340px] bg-[#111111]">
             <img
               src={EDITORIAL_IMAGES.atelierEditorialStudio}
-              alt="Maison Roseraie obsidian marble beauty vanity atelier"
+              alt="Vespera Beauty obsidian marble beauty vanity atelier"
               referrerPolicy="no-referrer"
               className="w-full h-full object-cover"
             />
@@ -77,18 +78,36 @@ export function AboutPage({ onNavigate }: { onNavigate: (route: PageRoute) => vo
 
 export function ContactPage() {
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [subject, setSubject] = useState('Shade Consultation');
   const [message, setMessage] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
   const [sent, setSent] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !email.trim() || !message.trim()) return;
-    setSent(true);
-    setName('');
-    setEmail('');
-    setMessage('');
+    if (!name.trim() || !phone.trim() || !message.trim() || submitting) return;
+    setSubmitting(true);
+    setErrorMsg('');
+    try {
+      await submitInquiry({
+        name: name.trim(),
+        phone: phone.trim(),
+        subject,
+        message: message.trim(),
+      });
+      setSent(true);
+      setName('');
+      setPhone('');
+      setMessage('');
+    } catch (err) {
+      setErrorMsg(
+        err instanceof Error ? err.message : 'Unable to send your inquiry right now. Please try again.'
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -99,7 +118,7 @@ export function ContactPage() {
             Private Concierge
           </p>
           <h1 className="font-display text-4xl sm:text-5xl font-semibold text-[#FFFFFF]">
-            Contact Maison Roseraie
+            Contact Vespera Beauty
           </h1>
           <p className="text-sm sm:text-base text-[#F4C6D0]/85">
             Consult with our beauty advisors for shade matching, bridal trousseau curation, or order assistance.
@@ -133,7 +152,7 @@ export function ContactPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <Mail className="w-4 h-4 text-[#D4AF70] shrink-0" />
-                  <span>concierge@maisonroseraie.com</span>
+                  <span>concierge@vesperabeauty.com</span>
                 </div>
               </div>
             </div>
@@ -146,7 +165,7 @@ export function ContactPage() {
                   Inquiry Received
                 </h2>
                 <p className="text-sm text-[#F4C6D0]/85">
-                  Our client concierge will respond to your email within 4 business hours.
+                  Our client concierge has saved your message and will contact you shortly.
                 </p>
                 <button
                   type="button"
@@ -158,6 +177,11 @@ export function ContactPage() {
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
+                {errorMsg && (
+                  <div className="p-3 rounded-xl bg-[#111111] border border-[#E8A1B2] text-xs text-[#F4C6D0]">
+                    {errorMsg}
+                  </div>
+                )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <input
                     type="text"
@@ -168,11 +192,11 @@ export function ContactPage() {
                     className="px-4 py-3 rounded-xl bg-[#111111] border border-[#D4AF70]/45 text-sm text-[#FFFFFF] placeholder:text-[#F4C6D0]/50 focus:outline-none focus:border-[#E8A1B2]"
                   />
                   <input
-                    type="email"
+                    type="tel"
                     required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Your Email"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="Phone Number (e.g. +92 300 1234567)"
                     className="px-4 py-3 rounded-xl bg-[#111111] border border-[#D4AF70]/45 text-sm text-[#FFFFFF] placeholder:text-[#F4C6D0]/50 focus:outline-none focus:border-[#E8A1B2]"
                   />
                 </div>
@@ -196,9 +220,10 @@ export function ContactPage() {
                 />
                 <button
                   type="submit"
-                  className="px-7 py-3 rounded-xl bg-[#D4AF70] text-[#090909] text-sm font-semibold hover:bg-[#C69B52] transition-colors"
+                  disabled={submitting}
+                  className="px-7 py-3 rounded-xl bg-[#D4AF70] text-[#090909] text-sm font-semibold hover:bg-[#C69B52] transition-colors disabled:opacity-60"
                 >
-                  Send to Concierge
+                  {submitting ? 'Sending Inquiry...' : 'Send to Concierge'}
                 </button>
               </form>
             )}
@@ -225,7 +250,7 @@ export function ReviewsPage({
 }) {
   const [name, setName] = useState('');
   const [city, setCity] = useState('Karachi');
-  const [productName, setProductName] = useState('24K Gold & Rosehip Radiance Face Serum');
+  const [productName, setProductName] = useState('Golden Botanical Glow Oil Elixir');
   const [rating, setRating] = useState(5);
   const [title, setTitle] = useState('');
   const [comment, setComment] = useState('');
@@ -296,7 +321,7 @@ export function ReviewsPage({
           </h2>
           {done ? (
             <div className="p-4 rounded-xl bg-[#1B1B1B] border border-[#D4AF70] text-sm text-[#F4C6D0]">
-              Thank you for sharing your Maison Roseraie experience.
+              Thank you for sharing your Vespera Beauty experience.
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-3">

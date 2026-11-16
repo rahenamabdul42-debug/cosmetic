@@ -106,7 +106,7 @@ export function ProductCard({
           {/* Unboxed Clean Metadata */}
           <div className="flex items-center justify-between gap-2 text-xs text-[#F4C6D0]/80">
             <span className="truncate">
-              {product.category} · {product.subcategory}
+              {product.dbCategory ?? `${product.category} · ${product.subcategory}`}
             </span>
             <span className="flex items-center gap-1 shrink-0 tabular-nums font-medium text-[#D4AF70]">
               <Star className="w-3.5 h-3.5 fill-[#D4AF70] text-[#D4AF70]" />
@@ -121,7 +121,9 @@ export function ProductCard({
             {product.name}
           </h3>
 
-          <p className="text-xs text-[#F4C6D0]/80 line-clamp-1">{product.subtitle}</p>
+          <p className="text-xs text-[#F4C6D0]/80 line-clamp-2">
+            {product.description || product.subtitle}
+          </p>
         </div>
 
         <div className="space-y-3 pt-1">

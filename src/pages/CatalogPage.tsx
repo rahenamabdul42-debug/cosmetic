@@ -19,7 +19,7 @@ const ROUTE_META: Record<
 > = {
   shop: {
     title: 'All Luxury Creations',
-    subtitle: 'Explore our complete 54-piece anthology across color couture, skincare, haircare, fragrance, and vanity accessories.',
+    subtitle: 'Explore our curated anthology across color couture, skincare, haircare, fragrance, and vanity accessories.',
   },
   makeup: {
     title: 'Makeup Couture',
@@ -58,7 +58,7 @@ const ROUTE_META: Record<
   },
   'new-arrivals': {
     title: 'New Arrivals',
-    subtitle: 'Fresh seasonal editions straight from the Maison Roseraie formulation studio.',
+    subtitle: 'Fresh seasonal editions straight from the Vespera Beauty formulation studio.',
     filterMode: 'new',
   },
 };
@@ -95,7 +95,7 @@ export function CatalogPage({
     const base = products.filter(
       (p) => p.isActive && (activeCategory === 'All' || p.category === activeCategory)
     );
-    const set = new Set(base.map((p) => p.subcategory).filter(Boolean));
+    const set = new Set(base.map((p) => p.dbCategory || p.subcategory).filter(Boolean));
     return ['All', ...Array.from(set)];
   }, [products, activeCategory]);
 
@@ -109,12 +109,17 @@ export function CatalogPage({
       }
       if (meta.filterMode === 'best' && !p.isBestSeller) return false;
       if (meta.filterMode === 'new' && !p.isNewArrival) return false;
-      if (selectedSubcategory !== 'All' && p.subcategory !== selectedSubcategory) return false;
+      if (
+        selectedSubcategory !== 'All' &&
+        (p.dbCategory || p.subcategory) !== selectedSubcategory
+      ) {
+        return false;
+      }
       if (offersOnly && !(p.discountPricePkr !== null && p.discountPricePkr < p.pricePkr)) {
         return false;
       }
       if (q) {
-        const hay = `${p.name} ${p.subtitle} ${p.category} ${p.subcategory} ${p.ingredients}`.toLowerCase();
+        const hay = `${p.name} ${p.description} ${p.subtitle} ${p.category} ${p.dbCategory ?? ''} ${p.subcategory} ${p.ingredients}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
@@ -140,7 +145,7 @@ export function CatalogPage({
         />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-3 relative z-10">
           <p className="text-xs tracking-[0.18em] uppercase text-[#D4AF70] font-semibold">
-            Maison Roseraie Collection
+            Vespera Beauty Collection
           </p>
           <h1 className="font-display text-4xl sm:text-5xl font-semibold text-[#FFFFFF]">
             {meta.title}

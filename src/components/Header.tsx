@@ -87,7 +87,7 @@ export function Header({
               onClick={() => handleLinkClick('home')}
               className="font-display text-2xl sm:text-[26px] font-semibold tracking-tight text-[#D4AF70] hover:text-[#F4C6D0] transition-colors whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-[#D4AF70]"
             >
-              Maison Roseraie
+              Vespera Beauty
             </button>
           </div>
 

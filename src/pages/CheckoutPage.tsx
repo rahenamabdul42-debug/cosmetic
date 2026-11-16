@@ -37,13 +37,21 @@ export function CheckoutPage({
   const [lookupQuery, setLookupQuery] = useState('');
 
   const subtotal = items.reduce((sum, item) => sum + item.unitPricePkr * item.quantity, 0);
-  const discount = promoCode.toUpperCase() === 'ROSERAIE10' ? Math.round(subtotal * 0.1) : 0;
+  const upperPromo = promoCode.toUpperCase();
+  const discount =
+    upperPromo === 'VESPERA10' || upperPromo === 'ROSERAIE10'
+      ? Math.round(subtotal * 0.1)
+      : 0;
   const shipping = subtotal >= 12000 || subtotal === 0 ? 0 : 350;
   const total = Math.max(0, subtotal - discount + shipping);
 
   const handleCheckoutSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (items.length === 0) return;
+    if (items.length === 0 || submitting) return;
+    if (!fullName.trim() || !email.trim() || !phone.trim() || !address.trim()) {
+      setErrorMsg('Please complete all required delivery details.');
+      return;
+    }
     setErrorMsg('');
     setSubmitting(true);
 
@@ -74,7 +82,7 @@ export function CheckoutPage({
         })),
       });
 
-      onOrderCreated(order);
+      await onOrderCreated(order);
       onClearCart();
       setConfirmedOrder(order);
     } catch (err) {
@@ -474,7 +482,7 @@ export function CheckoutPage({
                   type="text"
                   value={lookupQuery}
                   onChange={(e) => setLookupQuery(e.target.value)}
-                  placeholder="Enter Tracking ID (MR-2026-...) or Email..."
+                  placeholder="Enter Tracking ID (VB-...) or Email..."
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#111111] border border-[#D4AF70]/50 text-sm text-[#FFFFFF] placeholder:text-[#F4C6D0]/50 focus:outline-none focus:border-[#E8A1B2]"
                 />
               </div>

@@ -90,6 +90,7 @@ export function AdminDashboardPage({
   const [formImage, setFormImage] = useState(PRODUCT_IMAGES.velvetLipstick);
   const [formDesc, setFormDesc] = useState('');
   const [savingProduct, setSavingProduct] = useState(false);
+  const [actionError, setActionError] = useState('');
 
   useEffect(() => {
     (async () => {
@@ -120,6 +121,7 @@ export function AdminDashboardPage({
   };
 
   const openAddProduct = () => {
+    setActionError('');
     setEditingProduct(null);
     setFormName('');
     setFormSubtitle('');
@@ -135,6 +137,7 @@ export function AdminDashboardPage({
   };
 
   const openEditProduct = (p: Product) => {
+    setActionError('');
     setEditingProduct(p);
     setFormName(p.name);
     setFormSubtitle(p.subtitle);
@@ -164,6 +167,7 @@ export function AdminDashboardPage({
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     setSavingProduct(true);
+    setActionError('');
     try {
       const slug =
         editingProduct?.slug ??
@@ -178,6 +182,7 @@ export function AdminDashboardPage({
         name: formName.trim(),
         subtitle: formSubtitle.trim() || 'Luxury Atelier Creation',
         category: formCategory,
+        dbCategory: formSubcategory.trim() || formCategory,
         subcategory: formSubcategory.trim() || formCategory,
         description:
           formDesc.trim() ||
@@ -187,7 +192,7 @@ export function AdminDashboardPage({
         pricePkr: Number(formPrice) || 0,
         discountPricePkr: formDiscount.trim() ? Number(formDiscount) : null,
         stock: Math.max(0, Number(formStock) || 0),
-        sku: editingProduct?.sku ?? `MR-AD-${Math.floor(100 + Math.random() * 899)}`,
+        sku: editingProduct?.sku ?? `VB-AD-${Math.floor(100 + Math.random() * 899)}`,
         imageUrl: formImage,
         shades: editingProduct?.shades ?? ['Signature Edition'],
         volume: formVolume.trim() || '30ml',
@@ -206,25 +211,42 @@ export function AdminDashboardPage({
         : [saved, ...products];
       onProductsChanged(updatedList);
       setShowProductForm(false);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Unable to save product.');
     } finally {
       setSavingProduct(false);
     }
   };
 
   const handleDeleteProduct = async (id: string) => {
-    await deleteProductById(id);
-    onProductsChanged(products.filter((p) => p.id !== id));
+    setActionError('');
+    try {
+      await deleteProductById(id);
+      onProductsChanged(products.filter((p) => p.id !== id));
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Unable to delete product.');
+    }
   };
 
   const handleQuickStock = async (p: Product, delta: number) => {
-    const updated = { ...p, stock: Math.max(0, p.stock + delta) };
-    await upsertProduct(updated);
-    onProductsChanged(products.map((item) => (item.id === p.id ? updated : item)));
+    setActionError('');
+    try {
+      const updated = { ...p, stock: Math.max(0, p.stock + delta) };
+      await upsertProduct(updated);
+      onProductsChanged(products.map((item) => (item.id === p.id ? updated : item)));
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Unable to update stock.');
+    }
   };
 
   const handleStatusUpdate = async (orderId: string, status: OrderStatus) => {
-    await updateOrderStatus(orderId, status);
-    onOrdersChanged(orders.map((o) => (o.id === orderId ? { ...o, status } : o)));
+    setActionError('');
+    try {
+      await updateOrderStatus(orderId, status);
+      onOrdersChanged(orders.map((o) => (o.id === orderId ? { ...o, status } : o)));
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Unable to update order status.');
+    }
   };
 
   const totalRevenue = orders
@@ -249,7 +271,7 @@ export function AdminDashboardPage({
               <Lock className="w-5 h-5 text-[#D4AF70]" />
             </div>
             <h1 className="font-display text-3xl font-semibold text-[#FFFFFF]">
-              Atelier Admin Portal
+              Vespera Admin Portal
             </h1>
             <p className="text-xs text-[#F4C6D0]/80">
               {dbStatus?.connected
@@ -272,7 +294,7 @@ export function AdminDashboardPage({
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@maisonroseraie.com"
+                placeholder="admin@vesperabeauty.com"
                 className="w-full px-4 py-2.5 rounded-xl bg-[#111111] border border-[#D4AF70]/45 text-sm text-[#FFFFFF] placeholder:text-[#F4C6D0]/45 focus:outline-none focus:border-[#E8A1B2]"
               />
             </div>
@@ -310,7 +332,7 @@ export function AdminDashboardPage({
               Protected Store Management
             </p>
             <h1 className="font-display text-4xl font-semibold text-[#FFFFFF]">
-              Maison Roseraie Admin
+              Vespera Beauty Admin
             </h1>
           </div>
 
@@ -333,6 +355,12 @@ export function AdminDashboardPage({
             </button>
           </div>
         </div>
+
+        {actionError && (
+          <div className="p-4 rounded-2xl bg-[#1B1B1B] border border-[#E8A1B2] text-xs text-[#F4C6D0]">
+            {actionError}
+          </div>
+        )}
 
         {/* Honest Database Connection Card */}
         {dbStatus && (

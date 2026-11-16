@@ -1514,12 +1514,12 @@ export const FAQ_ITEMS = [
     a: 'Orders placed before 2:00 PM PKT are dispatched the same business day from our Atelier fulfillment center. Major cities receive parcels within 2–3 business days; remote regions within 4–5 business days.',
   },
   {
-    q: 'How can I track my Maison Roseraie order?',
-    a: 'Every completed order generates a unique tracking code (e.g., MR-2026-4812). Visit the Checkout / Order History tab or enter your Tracking ID in the Track Order lookup to view real-time status updates from Pending to Delivered.',
+    q: 'How can I track my Vespera Beauty order?',
+    a: 'Every completed order generates a unique tracking reference (e.g., VB-8F21A409). Visit the Checkout / Order History tab or enter your Tracking ID in the Track Order lookup to view real-time status updates from Pending to Delivered.',
   },
   {
     q: 'Are your skincare and cosmetics formulas cruelty-free and dermatologically tested?',
-    a: 'Every Maison Roseraie creation is 100% cruelty-free, paraben-free, and formulated with botanical actives—including Moroccan Damask rosewater, plant squalane, and vegan silk peptides—tested for sensitive skin compatibility.',
+    a: 'Every Vespera Beauty creation is 100% cruelty-free, paraben-free, and formulated with botanical actives—including Moroccan Damask rosewater, plant squalane, and vegan silk peptides—tested for sensitive skin compatibility.',
   },
   {
     q: 'What is your return and exchange policy?',

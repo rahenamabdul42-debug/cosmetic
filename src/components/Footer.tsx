@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowRight, Mail, MapPin, Phone } from 'lucide-react';
 import { PageRoute } from '../types/store';
+import { subscribeNewsletter } from '../services/storeService';
 import { GoldDivider } from './LuxuryDecor';
 
 interface FooterProps {
@@ -9,13 +10,30 @@ interface FooterProps {
 
 export function Footer({ onNavigate }: FooterProps) {
   const [email, setEmail] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [subscribedMsg, setSubscribedMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
-    setSubscribed(true);
-    setEmail('');
+    if (!email.trim() || submitting) return;
+    setSubmitting(true);
+    setErrorMsg('');
+    try {
+      const res = await subscribeNewsletter(email);
+      setSubscribedMsg(
+        res.alreadySubscribed
+          ? 'You are already subscribed to Vespera Beauty.'
+          : 'Welcome to Vespera Beauty. Your invitation is confirmed.'
+      );
+      setEmail('');
+    } catch (err) {
+      setErrorMsg(
+        err instanceof Error ? err.message : 'Unable to subscribe right now. Please try again.'
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -25,7 +43,7 @@ export function Footer({ onNavigate }: FooterProps) {
           {/* Maison Identity */}
           <div className="space-y-4">
             <h2 className="font-display text-3xl font-semibold text-[#D4AF70]">
-              Maison Roseraie
+              Vespera Beauty
             </h2>
             <p className="text-sm leading-relaxed text-[#F4C6D0]/85">
               An international luxury beauty house crafting Damask rosewater skincare, velvet color couture, and Grasse fine fragrances.
@@ -41,7 +59,7 @@ export function Footer({ onNavigate }: FooterProps) {
               </div>
               <div className="flex items-center gap-2">
                 <Mail className="w-3.5 h-3.5 text-[#D4AF70] shrink-0" />
-                <span>concierge@maisonroseraie.com</span>
+                <span>concierge@vesperabeauty.com</span>
               </div>
             </div>
           </div>
@@ -86,7 +104,7 @@ export function Footer({ onNavigate }: FooterProps) {
                 [
                   ['Best Sellers', 'best-sellers'],
                   ['New Arrivals', 'new-arrivals'],
-                  ['About the Maison', 'about'],
+                  ['About Vespera Beauty', 'about'],
                   ['Customer Reviews', 'reviews'],
                   ['Shipping & FAQ', 'faq'],
                   ['Contact Boutique', 'contact'],
@@ -115,14 +133,19 @@ export function Footer({ onNavigate }: FooterProps) {
             </h3>
             <p className="text-sm text-[#F4C6D0]/85 leading-relaxed">
               Receive private invitations to seasonal releases, bridal coffrets, and use code{' '}
-              <span className="font-semibold text-[#D4AF70]">ROSERAIE10</span> for 10% off.
+              <span className="font-semibold text-[#D4AF70]">VESPERA10</span> for 10% off.
             </p>
-            {subscribed ? (
+            {subscribedMsg ? (
               <div className="p-3.5 rounded-xl bg-[#1B1B1B] border border-[#D4AF70] text-sm text-[#F4C6D0]">
-                Welcome to Maison Roseraie. Your invitation is confirmed.
+                {subscribedMsg}
               </div>
             ) : (
               <form onSubmit={handleSubscribe} className="space-y-2.5">
+                {errorMsg && (
+                  <div className="p-2.5 rounded-xl bg-[#1B1B1B] border border-[#E8A1B2] text-xs text-[#F4C6D0]">
+                    {errorMsg}
+                  </div>
+                )}
                 <input
                   type="email"
                   required
@@ -133,9 +156,10 @@ export function Footer({ onNavigate }: FooterProps) {
                 />
                 <button
                   type="submit"
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#D4AF70] text-[#090909] text-sm font-semibold hover:bg-[#C69B52] transition-colors"
+                  disabled={submitting}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#D4AF70] text-[#090909] text-sm font-semibold hover:bg-[#C69B52] transition-colors disabled:opacity-60"
                 >
-                  <span>Subscribe</span>
+                  <span>{submitting ? 'Subscribing...' : 'Subscribe'}</span>
                   <ArrowRight className="w-4 h-4 text-[#090909]" />
                 </button>
               </form>
@@ -146,7 +170,7 @@ export function Footer({ onNavigate }: FooterProps) {
         <GoldDivider className="my-10" />
 
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#F4C6D0]/75">
-          <p>© {new Date().getFullYear()} Maison Roseraie. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Vespera Beauty. All rights reserved.</p>
           <p className="text-[#D4AF70]/90">
             Cash on Delivery Nationwide · Cruelty-Free Botanical Formulations
           </p>

@@ -24,21 +24,25 @@ export function CartPage({
   const [promoMessage, setPromoMessage] = useState('');
 
   const subtotal = items.reduce((sum, item) => sum + item.unitPricePkr * item.quantity, 0);
-  const discount = promoCode.toUpperCase() === 'ROSERAIE10' ? Math.round(subtotal * 0.1) : 0;
+  const upperPromo = promoCode.toUpperCase();
+  const discount =
+    upperPromo === 'VESPERA10' || upperPromo === 'ROSERAIE10'
+      ? Math.round(subtotal * 0.1)
+      : 0;
   const shipping = subtotal >= 12000 || subtotal === 0 ? 0 : 350;
   const total = Math.max(0, subtotal - discount + shipping);
 
   const handleApplyPromo = (e: React.FormEvent) => {
     e.preventDefault();
     const cleaned = promoInput.trim().toUpperCase();
-    if (cleaned === 'ROSERAIE10') {
+    if (cleaned === 'VESPERA10' || cleaned === 'ROSERAIE10') {
       onApplyPromo(cleaned);
-      setPromoMessage('ROSERAIE10 applied — 10% Atelier privilege deducted.');
+      setPromoMessage(`${cleaned} applied — 10% Atelier privilege deducted.`);
     } else if (!cleaned) {
       onApplyPromo('');
       setPromoMessage('');
     } else {
-      setPromoMessage('Invalid code. Try ROSERAIE10 for 10% off.');
+      setPromoMessage('Invalid code. Try VESPERA10 for 10% off.');
     }
   };
 
@@ -47,7 +51,7 @@ export function CartPage({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <p className="text-xs tracking-[0.18em] uppercase text-[#D4AF70] font-semibold">
-            Maison Roseraie
+            Vespera Beauty
           </p>
           <h1 className="font-display text-4xl sm:text-5xl font-semibold text-[#FFFFFF] mt-1">
             Shopping Bag
@@ -166,7 +170,7 @@ export function CartPage({
                     type="text"
                     value={promoInput}
                     onChange={(e) => setPromoInput(e.target.value)}
-                    placeholder="Promo code (ROSERAIE10)"
+                    placeholder="Promo code (VESPERA10)"
                     className="flex-1 px-3.5 py-2 rounded-xl bg-[#1B1B1B] border border-[#D4AF70]/50 text-xs text-[#FFFFFF] placeholder:text-[#F4C6D0]/50 focus:outline-none focus:border-[#E8A1B2]"
                   />
                   <button

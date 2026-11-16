@@ -9,8 +9,9 @@ import {
   ProductReview,
 } from './types/store';
 import { INITIAL_PRODUCTS, INITIAL_REVIEWS } from './data/catalog';
+import { isSupabaseConfigured } from './lib/supabase';
 import {
-  fetchCustomers,
+  fetchCustomersFromOrders,
   fetchOrders,
   fetchProducts,
   fetchReviews,
@@ -35,8 +36,8 @@ import {
 } from './pages/EditorialPages';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
 
-const CART_STORAGE_KEY = 'mr_cart_v1';
-const WISHLIST_STORAGE_KEY = 'mr_wishlist_v1';
+const CART_STORAGE_KEY = 'vb_cart_v1';
+const WISHLIST_STORAGE_KEY = 'vb_wishlist_v1';
 
 function parseLocation(): { route: PageRoute; slug?: string } {
   const path = window.location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
@@ -74,11 +75,14 @@ export default function App() {
   const [route, setRoute] = useState<PageRoute>(initialLoc.route);
   const [productSlug, setProductSlug] = useState<string | undefined>(initialLoc.slug);
 
-  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
+  const [products, setProducts] = useState<Product[]>(
+    isSupabaseConfigured() ? [] : INITIAL_PRODUCTS
+  );
   const [orders, setOrders] = useState<Order[]>([]);
   const [customers, setCustomers] = useState<CustomerRecord[]>([]);
   const [reviews, setReviews] = useState<ProductReview[]>(INITIAL_REVIEWS);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const [cart, setCart] = useState<CartItem[]>(() => {
     try {
@@ -122,29 +126,43 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePop);
   }, []);
 
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const [prodList, ordList, custList, revList] = await Promise.all([
-          fetchProducts(),
-          fetchOrders(),
-          fetchCustomers(),
-          fetchReviews(),
-        ]);
-        if (!mounted) return;
-        setProducts(prodList);
-        setOrders(ordList);
-        setCustomers(custList);
-        setReviews(revList);
-      } finally {
-        if (mounted) setLoading(false);
+  const loadStoreData = useCallback(async () => {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const [prodResult, ordResult, revList] = await Promise.allSettled([
+        fetchProducts(),
+        fetchOrders(),
+        fetchReviews(),
+      ]);
+
+      if (prodResult.status === 'fulfilled') {
+        setProducts(prodResult.value);
+      } else {
+        setLoadError(
+          prodResult.reason instanceof Error
+            ? prodResult.reason.message
+            : 'Unable to load products from Supabase.'
+        );
       }
-    })();
-    return () => {
-      mounted = false;
-    };
+
+      if (ordResult.status === 'fulfilled') {
+        setOrders(ordResult.value);
+        const derivedCustomers = await fetchCustomersFromOrders(ordResult.value);
+        setCustomers(derivedCustomers);
+      }
+
+      if (revList.status === 'fulfilled') {
+        setReviews(revList.value);
+      }
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void loadStoreData();
+  }, [loadStoreData]);
 
   const navigate = useCallback((nextRoute: PageRoute, slug?: string) => {
     setRoute(nextRoute);
@@ -228,13 +246,23 @@ export default function App() {
   }, []);
 
   const handleOrderCreated = useCallback(async (order: Order) => {
-    setOrders((prev) => [order, ...prev]);
-    const [freshProducts, freshCustomers] = await Promise.all([
-      fetchProducts(),
-      fetchCustomers(),
-    ]);
-    setProducts(freshProducts);
-    setCustomers(freshCustomers);
+    setOrders((prev) => {
+      const nextOrders = [order, ...prev];
+      void fetchCustomersFromOrders(nextOrders).then(setCustomers);
+      return nextOrders;
+    });
+    try {
+      const [freshProducts, freshOrders] = await Promise.all([
+        fetchProducts(),
+        fetchOrders(),
+      ]);
+      setProducts(freshProducts);
+      setOrders(freshOrders);
+      const derivedCustomers = await fetchCustomersFromOrders(freshOrders);
+      setCustomers(derivedCustomers);
+    } catch {
+      // Keep confirmed order in state even if background refresh fails
+    }
   }, []);
 
   const handleReviewSubmit = useCallback(
@@ -288,10 +316,23 @@ export default function App() {
       />
 
       <main className="flex-1">
+        {loadError && (
+          <div className="bg-[#111111] border-b border-[#E8A1B2]/60 px-4 py-3 text-center text-xs text-[#F4C6D0] flex flex-wrap items-center justify-center gap-3">
+            <span>{loadError}</span>
+            <button
+              type="button"
+              onClick={() => void loadStoreData()}
+              className="px-3 py-1 rounded-lg bg-[#D4AF70] text-[#090909] font-semibold hover:bg-[#C69B52] transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         {loading && products.length === 0 ? (
           <div className="min-h-[70vh] flex flex-col items-center justify-center bg-luxury-marble gap-3">
             <div className="w-10 h-10 rounded-full border-2 border-[#D4AF70] border-t-[#E8A1B2] animate-spin" />
-            <p className="font-display text-2xl text-[#F4C6D0]">Opening Maison Roseraie...</p>
+            <p className="font-display text-2xl text-[#F4C6D0]">Opening Vespera Beauty...</p>
           </div>
         ) : (
           <AnimatePresence mode="wait">
